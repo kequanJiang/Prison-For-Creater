@@ -1,0 +1,30 @@
+{
+  "ver": "1.0.0",
+  "uuid": "422071e1-3b89-4739-9062-c2b3f647621f",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "subMetas": {
+    "buy_diamonds_msgbox": {
+      "ver": "1.0.3",
+      "uuid": "3c722044-da9c-4938-aca6-2973dfacacc3",
+      "rawTextureUuid": "422071e1-3b89-4739-9062-c2b3f647621f",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0.5,
+      "offsetY": 0,
+      "trimX": 19,
+      "trimY": 13,
+      "width": 426,
+      "height": 289,
+      "rawWidth": 463,
+      "rawHeight": 315,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "ver": "1.0.0",
+  "uuid": "5501e94c-2c20-4b06-9c27-051afc90b74a",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "subMetas": {
+    "Handcuffs": {
+      "ver": "1.0.3",
+      "uuid": "95f77452-2634-4c93-ba91-5c641fdfb77f",
+      "rawTextureUuid": "5501e94c-2c20-4b06-9c27-051afc90b74a",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 0,
+      "trimY": 0,
+      "width": 88,
+      "height": 180,
+      "rawWidth": 88,
+      "rawHeight": 180,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}
