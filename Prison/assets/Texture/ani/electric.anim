@@ -1,0 +1,49 @@
+{
+  "__type__": "cc.AnimationClip",
+  "_name": "electric",
+  "_objFlags": 0,
+  "_rawFiles": null,
+  "_duration": 0.5,
+  "sample": 10,
+  "speed": 1,
+  "wrapMode": 1,
+  "curveData": {
+    "comps": {
+      "cc.Sprite": {
+        "spriteFrame": [
+          {
+            "frame": 0,
+            "value": {
+              "__uuid__": "1a7872ec-37dd-4f0b-8783-c53c496fee0d"
+            }
+          },
+          {
+            "frame": 0.1,
+            "value": {
+              "__uuid__": "e8e2dda5-6b41-415e-83bc-b918396b4c3d"
+            }
+          },
+          {
+            "frame": 0.2,
+            "value": {
+              "__uuid__": "1a7872ec-37dd-4f0b-8783-c53c496fee0d"
+            }
+          },
+          {
+            "frame": 0.3,
+            "value": {
+              "__uuid__": "e8e2dda5-6b41-415e-83bc-b918396b4c3d"
+            }
+          },
+          {
+            "frame": 0.4,
+            "value": {
+              "__uuid__": "1a7872ec-37dd-4f0b-8783-c53c496fee0d"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": []
+}

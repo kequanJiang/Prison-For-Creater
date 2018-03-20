@@ -8,22 +8,14 @@
 //  - [Chinese] http://www.cocos.com/docs/creator/scripting/life-cycle-callbacks.html
 //  - [English] http://www.cocos2d-x.org/docs/editors_and_tools/creator-chapters/scripting/life-cycle-callbacks/index.html
 
+// var Player = 
 cc.Class({
     extends: cc.Component,
 
     properties: {
       direction : 1,//0->left ,1->right
       visibleSize :cc.size(0,0),
-    },
-
-    onPlayerHitWall:function()
-    {
-        
-    },
-
-    onPlayerDie :function()
-    {
-
+     
     },
 
     onPlayerChangeDir :function(dir) 
@@ -39,12 +31,24 @@ cc.Class({
             else
             {
                 this.setRotationY(0);
-                this.node.runActin(cc.moveTo(0.05,cc.p(260,331)));
+                this.node.runAction(cc.moveTo(0.05,cc.p(260,331)));
             }
         }
 
         
     },
+
+    onPlayerHitWall:function()
+    {
+        
+    },
+
+    onPlayerDie :function()
+    {
+
+    },
+
+    
 
     onLoad :function()
     {
@@ -62,3 +66,5 @@ cc.Class({
 
     // update (dt) {},
 });
+
+// module.exports = Player

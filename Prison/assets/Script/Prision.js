@@ -8,6 +8,8 @@
 //  - [Chinese] http://www.cocos.com/docs/creator/scripting/life-cycle-callbacks.html
 //  - [English] http://www.cocos2d-x.org/docs/editors_and_tools/creator-chapters/scripting/life-cycle-callbacks/index.html
 
+// var Player = require("Player")
+
 cc.Class({
     extends: cc.Component,
 
@@ -27,7 +29,10 @@ cc.Class({
         //         this._bar = value
         //     }
         // },
+        direction : 1,//0->left ,1->right
         visibleSize :cc.size(0,0),
+        dataCount : 100, //存储电线数据个数
+        maxDis : 4, //最大电线间距
         btn_play:
         {
             default : null,
@@ -71,6 +76,73 @@ cc.Class({
             default : null,
             type    : cc.Sprite
         },
+        wireDistanceArray: //电线间隔数组
+        {
+            default:[],
+            type : [cc.Integer]
+        },
+
+        wireTowardArray://电线朝向数组
+        {
+            default:[],
+            type:[cc.Boolean]
+        },
+    },
+
+    initData:function()
+    {
+        for(var i = 0;i < this.dataCount;i++)
+        {
+            var dis = Math.ceil( Math.random() * 10000000) % this.maxDis
+            var toward = Math.ceil( Math.random() * 10000000) % 2
+
+            if (dis == 0)
+            {
+                dis = this.maxDis
+            }
+            if (i == 0 && dis == 1) //第一根电线距离不能太小
+            {
+                dis = 2
+            }
+            this.wireDistanceArray[i] = dis
+
+            if (dis == 1 && i != 0) //当两者距离为1,如果方向相反的情况是不行的
+            {
+                this.wireTowardArray[i] = this.wireTowardArray[i-1]
+            }
+            else
+            {
+                if (toward == 0)
+                {
+                    this.wireTowardArray[i] = false
+                }
+                else
+                {
+                    this.wireTowardArray[i] = true
+                }
+            }
+            
+        }
+        // console.log("i = ",i)
+        // console.log("this.wireDistanceArray[i] = ",this.wireDistanceArray[i])
+        // console.log("this.wireTowardArray[i] = ",this.wireTowardArray[i])
+    },
+
+    addWall :function()
+    {
+        // var wall = new cc.Sprite("Texture/Gaming/wall_1.png")
+        // this.node.addChild(wall)
+        var wall = new cc.Node('Wall')
+        var sp = wall.addComponent(cc.Sprite)
+        sp = new cc.SpriteFrame("resources/Gaming/wall_1.png")
+        wall.setPosition(cc.p(100,100))
+        this.node.addChild(wall,100)
+
+        
+        // var wall = this.node.addComponent(cc.Sprite)
+        // wall.SpriteFrame = new cc.SpriteFrame("Texture/Gaming/wall_1.png")
+        // wall.setPosition(cc.p(100,100))
+        // wall.x = 150
     },
 
     setTouchControl: function()
@@ -84,18 +156,25 @@ cc.Class({
             console.log("visibleSizeX = ",this.visibleSize.width)
             console.log("visibleSizeY = ",this.visibleSize.height)
             
-            // console.log("dir = ",this.player.getComponent('Player').direction)
+            console.log("dir = ",this.player.getComponent('Player').direction)
+            // console.log("dir = ",Player.direction)
             if (touchPos.x < this.visibleSize.width * 0.5 )
             {
                 console.log("on touch left")
                 // this.player.onPlayerChangeDir(0)
+                // this.player.setRotationY(180)
+                // this.player.getComponent('Player').onPlayerHitWall()
+                // this.player.getComponent('Player').onPlayerChangeDir(0)
+                this.onPlayerChangeDir(0)
                 
             }
             else
             {
                 console.log("on touch right")
-                this.player.getComponent('Player').onPlayerChangeDir(1)
+                // this.player.getComponent(Player).onPlayerChangeDir(1)
                 // this.player.onPlayerChangeDir(1)
+                // this.player.setRotationY(0)
+                this.onPlayerChangeDir(1)
             }
             
         }.bind(this),this)
@@ -150,20 +229,52 @@ cc.Class({
             // cc.moveTo(0.1,cc.p(-584,480))
         )))
     },
+
+    onPlayerChangeDir :function(dir) 
+    {
+        if (this.direction != dir)
+        {
+            this.direction = dir
+            if (this.direction == 0 ) //right->left
+            {
+                this.player.setRotationY(180)
+                this.player.runAction(cc.moveTo(0.01,cc.p(-260,-330)))
+            }
+            else
+            {
+                this.player.setRotationY(0)
+                this.player.runAction(cc.moveTo(0.01,cc.p(260,-330)))
+            }
+        }
+
+        // this.onPlayerHitWall()
+    },
+
+    onPlayerHitWall:function()
+    {
+        var animation = this.player.getComponent(cc.Animation)
+        animation.play('hitwall')
+    },
+
+    onPlayerDie :function()
+    {
+        var animation = this.player.getComponent(cc.Animation)
+        animation.play('electric')
+    },
     // LIFE-CYCLE CALLBACKS:
 
     onLoad :function() 
     {
         this.visibleSize = cc.director.getVisibleSize()
-
+        this.direction = 1
         this.left_tap.setVisible(false)
         this.right_tap.setVisible(false)
 
-        // this.player.setRotationY(180)
-        // this.player.setPosition(cc.p(0,0))
-        this.setTouchControl()
+        this.initData()
         this.initHomeAction()
+        this.setTouchControl()
         this.runCloudAction()
+        this.addWall()
         // this.runTapAction()
         this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
             console.log("按钮按下")
