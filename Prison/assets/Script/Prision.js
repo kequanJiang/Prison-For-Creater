@@ -10,6 +10,46 @@
 
 // var Player = require("Player")
 
+var GameState = {
+    Free    : 0,
+    Gaming  : 1
+}
+
+var WallType = {
+    Normal : 0,
+    Left : 1,
+    Right : 2
+}
+
+var PlaySide ={
+    Left : 1,
+    Right: 2
+}
+
+//速度分x、y速度
+var defauleSpeed = [cc.p(-800,450),
+                    cc.p(800,550),
+                    cc.p(900,0),
+                    cc.p(-900,0),
+                    cc.p(-760,-400),
+                    cc.p(760,-380),
+                    cc.p(0,-800)
+                ];
+
+var realSpeedArray = new Array()
+// [
+//     cc.p(-800,450),
+//     cc.p(800,550),
+//     cc.p(900,0),
+//     cc.p(-900,0),
+//     cc.p(-760,-400),
+//     cc.p(760,-380),
+//     cc.p(0,-800)
+// ];
+var Gravity = 100
+
+var wallChipsArray = new Array()
+
 cc.Class({
     extends: cc.Component,
 
@@ -29,7 +69,8 @@ cc.Class({
         //         this._bar = value
         //     }
         // },
-        direction : 1,//0->left ,1->right
+
+        playSide : PlaySide.Right,//0->left ,1->right
         visibleSize :cc.size(0,0),
         dataCount : 100, //存储电线数据个数
         maxDis : 4, //最大电线间距
@@ -40,6 +81,8 @@ cc.Class({
         wallIndex : -1,
         currentPosY : -320,
         wallHeight : 0,//墙体高度
+        gameState : GameState.Gaming, // 游戏状态
+
         btn_play:
         {
             default : null,
@@ -90,17 +133,31 @@ cc.Class({
             default : null,
             type    : cc.Sprite
         },
+        Logo:
+        {
+            default : null,
+            type    : cc.Sprite
+        },
         wireSprite:
         {
             default : null,
             type    : cc.SpriteFrame
         },
+        // wallChipsArray:
+        // {
+        //     default : [],
+        //     type    : [cc.Node]
+        // },
         wallArray :
         {
             default : [],
             type    : cc.Node
         },
         wallSpriteArray: {
+            default: [],
+            type: [cc.SpriteFrame],
+        },
+        wallChipsSpriteArray: {
             default: [],
             type: [cc.SpriteFrame],
         },
@@ -165,23 +222,30 @@ cc.Class({
     {
         var self = this
         this.node.on(cc.Node.EventType.TOUCH_START,function(event){
-            
+            if (this.gameState != GameState.Gaming)
+            {
+                return;
+            }
+            this.left_tap.setVisible(false);
+            this.right_tap.setVisible(false);
+            this.left_tap.node.stopAllActions();
+            this.right_tap.node.stopAllActions();
             var touchPos = event.touch.getLocation()
             console.log("touchposx = ",touchPos.x)
             console.log("visibleSizeX = ",this.visibleSize.width)
             console.log("visibleSizeY = ",this.visibleSize.height)
             
-            console.log("dir = ",this.player.getComponent('Player').direction)
+            // console.log("dir = ",this.player.getComponent('Player').playSide)
             if (touchPos.x < this.visibleSize.width * 0.5 )
             {
                 console.log("on touch left")
-                this.onPlayerClickDir(0)
+                this.onPlayerClickDir(PlaySide.Left)
                 
             }
             else
             {
                 console.log("on touch right")
-                this.onPlayerClickDir(1)
+                this.onPlayerClickDir(PlaySide.Right)
             }
             
         }.bind(this),this)
@@ -208,6 +272,8 @@ cc.Class({
 
     runTapAction :function()
     {
+        this.left_tap.setVisible(true);
+        this.right_tap.setVisible(true);
         this.left_tap.node.runAction(cc.repeatForever(cc.sequence(
             cc.moveBy(0.8,cc.p(50,0)),
             cc.moveBy(1.0,cc.p(-50,0))
@@ -218,6 +284,8 @@ cc.Class({
             cc.moveBy(1.0,cc.p(50,0))
         )))
     },
+
+
 
     runCloudAction :function()
     {
@@ -252,28 +320,28 @@ cc.Class({
         var addWallAni = cc.callFunc(this.addWall,this);
         var deleteWallAni = cc.callFunc(this.deleteWall,this);
         var chenckAlive = cc.callFunc(this.onCheckAlive,this);
-        if (this.direction != dir)//换边
+        if (this.playSide != dir)//换边
         {
             this.node.runAction(cc.sequence(
                 changeSide,
-                // chenckAlive,
+                chenckAlive,
                 hitAni,
-                // boomAni,
+                boomAni,
                 downAni,
                 addWallAni,
-                deleteWallAni
-                // chenckAlive,
+                deleteWallAni,
+                chenckAlive
             ))
         }
         else//不换边
         {
             this.node.runAction(cc.sequence(
                 hitAni,
-                // boomAni,
+                boomAni,
                 downAni,
                 addWallAni,
-                deleteWallAni
-                // chenckAlive,
+                deleteWallAni,
+                chenckAlive
             ))
         }
 
@@ -285,10 +353,11 @@ cc.Class({
         var wall = new cc.Node("Wall");
         var sp = wall.addComponent(cc.Sprite);
         //随机墙体精灵
-        var wallSpriteIndex = Math.floor((Math.random() * 10000) % 5)
+        var wallSpriteIndex = Math.floor((Math.random() * 10000)) % 5
        
         sp.spriteFrame = this.wallSpriteArray[wallSpriteIndex];//this.wallSpriteArray[wallSpriteIndex];
         this.wall_node.addChild(wall);
+        wall.setTag(WallType.Normal)
         this.wallHeight = wall.getContentSize().height;
         wall.setPosition(0,this.currentPosY);
         this.currentPosY += wall.getContentSize().height;
@@ -306,12 +375,14 @@ cc.Class({
             {
                 wire.setAnchorPoint(0,0.5);
                 wire.setPosition(90,0);
+                wall.setTag(WallType.Right)
             }
             else
             {
                 wire.setAnchorPoint(0.5,0.5);
                 wire.setPosition(-250,0);
                 wire.setRotationY(180);
+                wall.setTag(WallType.Left)
             }
 
             this.curWireIndex = this.wallIndex;
@@ -325,6 +396,10 @@ cc.Class({
     },
     deleteWall:function()
     {
+        if (this.gameState != GameState.Gaming)
+        {
+            return;
+        }
            //     //模仿实现c++ vector 功能实现
       
         this.wallArray[0].destroy();
@@ -338,10 +413,10 @@ cc.Class({
     onPlayerChangeSide : function(dir)
     {
         console.log("onPlayerChangeSide dir = ",dir)
-        if (this.direction != dir)//换边
+        if (this.playSide != dir)//换边
         {
-            this.direction = dir
-            if (this.direction == 0 ) //right->left
+            this.playSide = dir
+            if (this.playSide == PlaySide.Left ) //right->left
             {
                 this.player.setRotationY(180)
                 this.player.runAction(cc.moveTo(0.01,cc.p(-260,-330)))
@@ -356,6 +431,10 @@ cc.Class({
 
     onPlayerHitWall:function()
     {
+        if (this.gameState != GameState.Gaming)
+        {
+            return;
+        }
         var animation = this.player.getComponent(cc.Animation)
         animation.play('hitwall')
     },
@@ -368,31 +447,117 @@ cc.Class({
 
     onWallDown:function()
     {
+        if (this.gameState != GameState.Gaming)
+        {
+            return;
+        }
         this.wall_node.runAction(cc.moveBy(0.1,cc.p(0,-this.wallHeight)))
     },
 
     onBoomAni:function()
     {
+        if (this.gameState != GameState.Gaming)
+        {
+            return;
+        }
+        
+        for(var i = 0;i < 7;i++)
+        {
+            // console.log("onBoomAni i = ",i)
+            var chipNode = new cc.Node("chipNode");
+            var sp = chipNode.addComponent(cc.Sprite)
+            sp.spriteFrame = this.wallChipsSpriteArray[i];
+            
+            this.node.addChild(chipNode);
+            chipNode.setPosition(cc.p(0,-320));
+            // this.wallChipsArray[i] = chipNode;
+            wallChipsArray.push(chipNode);
+            var n = Math.floor(Math.random() * 100) % 5;
+            var m = Math.floor(Math.random()*100) % 2;
+            if (m == 0)
+            {
+                n = n * -1
+            }
+            var scale = 30;
+            realSpeedArray.push( cc.p(defauleSpeed[i].x + scale * n,defauleSpeed[i].y +  scale * n)); 
+        }
+    },
 
+    onWallAway : function(dt)
+    {
+        var length = wallChipsArray.length
+        if (length != 0 )
+        {
+            for(var i = 0;i < length;i++)
+            {
+                var pos = wallChipsArray[i].getPosition();
+                var speed = realSpeedArray[i];
+                speed.y -= dt * Gravity;
+
+                pos.x += speed.x * dt;
+                pos.y += speed.y * dt;
+                realSpeedArray[i] = speed;
+
+                wallChipsArray[i].setPosition(pos);
+                wallChipsArray[i].setRotation(wallChipsArray[i].getRotation() + 400 * dt );
+                if (pos.x <= -this.visibleSize.width * 0.5 - 300 || pos.y <= -this.visibleSize.height * 0.5 - 300 || pos.x >= this.visibleSize.width * 0.5 + 300)
+                {
+                    wallChipsArray.splice(i,1);
+                    realSpeedArray.splice(i,1);
+                    if (i)
+                    {
+                        i --;
+                    }
+                    length--;
+                    if (length == 0)
+                    {
+                        break;
+                    }
+                }
+
+            }
+        }
     },
 
     onCheckAlive :function()
     {
-
+        if (this.gameState != GameState.Gaming)
+        {
+            return;
+        }
+        var wireSide = this.wallArray[0].getTag();
+        if (wireSide == this.playSide)
+        {
+            this.onPlayerDie();
+            this.gameState = GameState.Free
+        }
     },
+
+    onBtnPlayCallBack : function(target,tType)
+    {
+        if (tType == cc.Node.EventType.TOUCH_END)
+        {
+            console.log("在按钮结束");
+        }
+    },
+
+    onGameStart : function()
+    {
+        this.gameState = GameState.Gaming;
+        // this.btn_play.setTouchEnable
+        this.btn_play.node.active = false
+        this.runTapAction();
+        this.Handcuffs.setVisible(false);
+        this.Logo.setVisible(false);
+    },
+
     // LIFE-CYCLE CALLBACKS:
 
     onLoad :function() 
     {
-        // var bg = new cc.Node("bg")
-        // var sp = bg.addComponent(cc.Sprite);
-        // sp.spriteFrame = this.wallSprite;
-
-        // this.node.addChild(bg)
-        
-
         this.visibleSize = cc.director.getVisibleSize()
-        this.direction = 1
+        this.playSide = PlaySide.Right
+        this.gameState = GameState.Free;
         this.left_tap.setVisible(false)
         this.right_tap.setVisible(false)
         
@@ -404,27 +569,28 @@ cc.Class({
         this.runCloudAction()
         // this.addWall()
         // this.runTapAction()
-        this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
-            console.log("按钮按下")
-        })
 
-        this.btn_play.node.on(cc.Node.EventType.TOUCH_MOVE, function(event){
-            console.log("在按钮上滑动")
-        })
+        // this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
+        //     console.log("按钮按下")
+        // })
 
+        // this.btn_play.node.on(cc.Node.EventType.TOUCH_MOVE, function(event){
+        //     console.log("在按钮上滑动")
+        // })
+        var self = this;
         this.btn_play.node.on(cc.Node.EventType.TOUCH_END, function(event){
             console.log("在按钮结束")
+            self.onGameStart()
         })
-
+        // this.btn_play.addTouchEventListener(this.onBtnPlayCallBack,this)
         
         
     },
-    callback: function (event) {
-        //这里的 event 是一个 EventCustom 对象，你可以通过 event.detail 获取 Button 组件
-        var button = event.detail;
-        //do whatever you want with button
-        //另外，注意这种方式注册的事件，也无法传递 customEventData
-     },
+
+    update: function (dt) 
+    {
+       this.onWallAway(dt);
+    },
 
     start () {
 

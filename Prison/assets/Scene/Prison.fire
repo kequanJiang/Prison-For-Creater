@@ -1164,7 +1164,7 @@
       "__id__": 2
     },
     "_enabled": true,
-    "direction": 1,
+    "playSide": 2,
     "visibleSize": {
       "__type__": "cc.Size",
       "width": 0,
@@ -1179,6 +1179,7 @@
     "wallIndex": -1,
     "currentPosY": -320,
     "wallHeight": 0,
+    "gameState": 0,
     "btn_play": {
       "__id__": 24
     },
@@ -1209,6 +1210,9 @@
     "cloud3": {
       "__id__": 12
     },
+    "Logo": {
+      "__id__": 21
+    },
     "wireSprite": {
       "__uuid__": "4d64fe67-9096-47bc-9d98-df30980c3252"
     },
@@ -1236,6 +1240,29 @@
       },
       {
         "__uuid__": "fedc0ff6-884c-4ff4-9756-816bb6d4d210"
+      }
+    ],
+    "wallChipsSpriteArray": [
+      {
+        "__uuid__": "d6d91e23-6633-4aac-b3a9-b4fbdd43d75a"
+      },
+      {
+        "__uuid__": "96cd7be2-0638-443a-bd18-181d74fd45ff"
+      },
+      {
+        "__uuid__": "b9405257-9fb6-432a-8867-fba9ee8a9110"
+      },
+      {
+        "__uuid__": "723b2337-26a2-4619-a480-0050de6f0e7e"
+      },
+      {
+        "__uuid__": "797f45ad-fb64-4d7e-8620-c90d8d37fe14"
+      },
+      {
+        "__uuid__": "ab752122-1a08-4ba0-9691-0976feb9892f"
+      },
+      {
+        "__uuid__": "1b03c161-82a8-420d-a698-471dcaaf416a"
       }
     ],
     "wireDistanceArray": [
