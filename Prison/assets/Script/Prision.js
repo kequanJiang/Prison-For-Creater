@@ -26,6 +26,8 @@ var PlaySide ={
     Right: 2
 }
 
+var INIT_HP = 50;//游戏初始
+
 //速度分x、y速度
 var defauleSpeed = [cc.p(-800,450),
                     cc.p(800,550),
@@ -73,7 +75,7 @@ cc.Class({
         playSide : PlaySide.Right,//0->left ,1->right
         visibleSize :cc.size(0,0),
         dataCount : 100, //存储电线数据个数
-        maxDis : 4, //最大电线间距
+        maxDis : 3, //最大电线间距
         wallCount : 6,//最大墙体数目
         wallArrayCount:0,//存储墙体数组数目
         wireIndex : 0,//电线数组index
@@ -81,6 +83,11 @@ cc.Class({
         wallIndex : -1,
         currentPosY : -320,
         wallHeight : 0,//墙体高度
+        realHp :    INIT_HP,//初始血量
+        totalHp :   100,//总血量
+        hpReduceSpeed : 6,//血量衰减速度
+        hpAddSpeed  :   5,//血量增加速度
+        dieHpLimit  :   0,//死亡血量限制
         gameState : GameState.Gaming, // 游戏状态
 
         btn_play:
@@ -138,6 +145,21 @@ cc.Class({
             default : null,
             type    : cc.Sprite
         },
+        hpBarShow:
+        {
+            default : null,
+            type    : cc.Sprite
+        },
+        hpBar:
+        {
+            default :   null,
+            type    : cc.Node
+        },
+        playerFrame:
+        {
+            default : null,
+            type    : cc.SpriteFrame
+        },
         wireSprite:
         {
             default : null,
@@ -148,6 +170,26 @@ cc.Class({
         //     default : [],
         //     type    : [cc.Node]
         // },
+        bgAudio:
+        {
+            default : null,
+            url     : cc.AudioClip
+        },
+        prisonDieAudio:
+        {
+            default : null,
+            url     : cc.AudioClip
+        },
+        prisonHitAudio:
+        {
+            default : null,
+            url     : cc.AudioClip
+        },
+        btnClickAudio:
+        {
+            default : null,
+            url     : cc.AudioClip
+        },
         wallArray :
         {
             default : [],
@@ -195,9 +237,17 @@ cc.Class({
             }
             this.wireDistanceArray[i] = dis
 
-            if (dis == 1 && i != 0) //当两者距离为1,如果方向相反的情况是不行的
+            if (dis == 1 && i != 0 && i > 1) //当两者距离为1,如果方向相反的情况是不行的
             {
-                this.wireTowardArray[i] = this.wireTowardArray[i-1]
+                //处理连续的情况
+                if (this.wireDistanceArray[i-1] == 1 && this.wireDistanceArray[i-2] == 1)
+                {
+                    this.wireDistanceArray[i] = 2;
+                }
+                else
+                {
+                    this.wireTowardArray[i] = this.wireTowardArray[i-1];
+                }
             }
             else
             {
@@ -253,7 +303,7 @@ cc.Class({
 
     initWallUI :function()
     {
-
+        console.log("initWallUI")
         for (var i = 0;i < this.wallCount;i++)
         {
             this.addWall();
@@ -274,6 +324,8 @@ cc.Class({
     {
         this.left_tap.setVisible(true);
         this.right_tap.setVisible(true);
+        this.left_tap.node.setPosition(-250,-580)
+        this.right_tap.node.setPosition(250,-580)
         this.left_tap.node.runAction(cc.repeatForever(cc.sequence(
             cc.moveBy(0.8,cc.p(50,0)),
             cc.moveBy(1.0,cc.p(-50,0))
@@ -394,6 +446,7 @@ cc.Class({
  
         
     },
+
     deleteWall:function()
     {
         if (this.gameState != GameState.Gaming)
@@ -403,7 +456,7 @@ cc.Class({
            //     //模仿实现c++ vector 功能实现
       
         this.wallArray[0].destroy();
-        for(var i = 0;i < this.wallCount + 1;i++)
+        for(var i = 0;i < this.wallCount;i++)
         {
             this.wallArray[i] = this.wallArray[i + 1];
         }
@@ -441,6 +494,7 @@ cc.Class({
 
     onPlayerDie :function()
     {
+        this.playPlayerDieEffect();
         var animation = this.player.getComponent(cc.Animation)
         animation.play('electric')
     },
@@ -460,7 +514,7 @@ cc.Class({
         {
             return;
         }
-        
+        this.playPlayerHitEccect();
         for(var i = 0;i < 7;i++)
         {
             // console.log("onBoomAni i = ",i)
@@ -519,6 +573,28 @@ cc.Class({
         }
     },
 
+    changeHp:function(dt)
+    {
+        if (this.gameState != GameState.Gaming)
+            return;
+        this.realHp -= this.hpReduceSpeed * dt;
+        if (this.realHp > this.totalHp)
+            this.realHp = this.totalHp;
+        if(this.realHp <= this.dieHpLimit)
+        {
+            // this.node.runAction(cc.sequence(
+            //     cc.delayTime(2.0),
+            //     cc.callFunc(this.onGameOver,this)
+            // ))
+            cc.callFunc(this.onGameOver,this)
+            // this.gameState = GameState.Free
+            this.playPlayerDieEffect();
+        }
+        
+        this.setHpBarProgress(this.realHp / this.totalHp);
+        console.log("this.realHp = ",this.realHp);
+    },
+
     onCheckAlive :function()
     {
         if (this.gameState != GameState.Gaming)
@@ -529,7 +605,10 @@ cc.Class({
         if (wireSide == this.playSide)
         {
             this.onPlayerDie();
-            this.gameState = GameState.Free
+            this.node.runAction(cc.sequence(
+                cc.delayTime(2.0),
+                cc.callFunc(this.onGameOver,this)
+            ))
         }
     },
 
@@ -541,43 +620,119 @@ cc.Class({
         }
     },
 
+    onGameOver : function()
+    {
+        
+        this.gameState = GameState.Free
+        this.btn_play.node.active = true;
+        this.Handcuffs.setVisible(true);
+        this.Logo.setVisible(true);
+        this.setHpBarVisible(false);
+        this.onGameRestart();
+
+        this.left_tap.setVisible(false);
+        this.right_tap.setVisible(false);
+        this.left_tap.node.stopAllActions();
+        this.right_tap.node.stopAllActions();
+    },
+
+    onGameRestart :function()
+    {
+        this.initData();
+        for(var i = 0;i < this.wallCount;i++)
+        {
+            this.wallArray[i].destroy()
+        }
+        this.wallArrayCount = 0;
+        this.wallIndex = -1;
+        this.wireIndex = 0;
+        this.curWireIndex = 0;
+        this.currentPosY = -320;
+        this.wall_node.setPosition(0,0);
+        this.initWallUI();
+        this.onPlayerChangeSide(PlaySide.Right);
+        this.player.getComponent(cc.Sprite).spriteFrame = this.playerFrame;
+        //以下做法会导致猪脚播放动画出问题，百撕不得骑姐呀
+        // var realUrl = cc.url.raw('Texture/Gaming/part_1.png');
+        // console.log("realUrl = ",realUrl)  
+        // var texture = cc.textureCache.addImage(realUrl);  
+        // this.player.getComponent(cc.Sprite).spriteFrame.setTexture(texture);
+    },
     onGameStart : function()
     {
+        this.realHp = INIT_HP;
         this.gameState = GameState.Gaming;
         // this.btn_play.setTouchEnable
         this.btn_play.node.active = false
         this.runTapAction();
         this.Handcuffs.setVisible(false);
         this.Logo.setVisible(false);
+        this.setHpBarVisible(true);
+        this.setHpBarProgress(this.realHp / this.totalHp);
     },
 
+    playBackGroundMusic: function()
+    {
+        cc.audioEngine.playMusic(this.bgAudio,true);
+    },
+
+    playButtonClickEffect :function()
+    {
+        cc.audioEngine.playEffect(this.btnClickAudio,false);
+    },
+    playPlayerHitEccect:function()
+    {
+        cc.audioEngine.playEffect(this.prisonHitAudio,false);
+    },
+    playPlayerDieEffect:function()
+    {
+        cc.audioEngine.playEffect(this.prisonDieAudio,false);
+    },
     // LIFE-CYCLE CALLBACKS:
 
+    setHpBarVisible:function(visible)
+    {
+        this.hpBar.active = visible;
+        this.hpBarShow.active =visible;// .setVisible(visible);
+    },
+
+    setHpBarProgress:function(percent)//0-1
+    {
+        // this.hpBar.setProgress(percent)
+        // this.hpBar.progress = 0.5;
+        var progressBar = this.hpBar.getComponent(cc.ProgressBar);
+        progressBar.progress = percent;
+    },
     onLoad :function() 
     {
-        this.visibleSize = cc.director.getVisibleSize()
-        this.playSide = PlaySide.Right
+        this.visibleSize = cc.director.getVisibleSize();
+        this.playSide = PlaySide.Right;
         this.gameState = GameState.Free;
-        this.left_tap.setVisible(false)
-        this.right_tap.setVisible(false)
+        this.left_tap.setVisible(false);
+        this.right_tap.setVisible(false);
         
+        this.setHpBarVisible(false);
+        // this.setHpBarProgress(0.5);
 
-        this.initData()
-        this.initHomeAction()
-        this.initWallUI()
-        this.setTouchControl()
-        this.runCloudAction()
+        this.initData();
+        this.initHomeAction();
+        this.initWallUI();
+        this.setTouchControl();
+        this.runCloudAction();
+
+        this.playBackGroundMusic();
         // this.addWall()
         // this.runTapAction()
-
-        // this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
-        //     console.log("按钮按下")
-        // })
+        var self = this;
+        this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
+            console.log("按钮按下")
+            self.playButtonClickEffect();
+        })
 
         // this.btn_play.node.on(cc.Node.EventType.TOUCH_MOVE, function(event){
         //     console.log("在按钮上滑动")
         // })
-        var self = this;
+        
         this.btn_play.node.on(cc.Node.EventType.TOUCH_END, function(event){
             console.log("在按钮结束")
             self.onGameStart()
@@ -590,6 +745,7 @@ cc.Class({
     update: function (dt) 
     {
        this.onWallAway(dt);
+       this.changeHp(dt);
     },
 
     start () {
