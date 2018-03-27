@@ -88,9 +88,16 @@ cc.Class({
         hpReduceSpeed : 6,//血量衰减速度
         hpAddSpeed  :   5,//血量增加速度
         dieHpLimit  :   0,//死亡血量限制
+        scoreNumber :   0,//玩家得分
+        gameLevel   :   1,
         gameState : GameState.Gaming, // 游戏状态
 
         btn_play:
+        {
+            default : null,
+            type    : cc.Button
+        },
+        btn_restart:
         {
             default : null,
             type    : cc.Button
@@ -148,12 +155,22 @@ cc.Class({
         hpBarShow:
         {
             default : null,
-            type    : cc.Sprite
+            type    : cc.Node
         },
         hpBar:
         {
             default :   null,
             type    : cc.Node
+        },
+        sprScore:
+        {
+            default :   null,
+            type    : cc.Sprite
+        },
+        lblScore:
+        {
+            default :   null,
+            type    : cc.Label
         },
         playerFrame:
         {
@@ -222,6 +239,13 @@ cc.Class({
 
     initData:function()
     {
+        this.wallArrayCount = 0;
+        this.wallIndex = -1;
+        this.wireIndex = 0;
+        this.curWireIndex = 0;
+        this.currentPosY = -320;
+        this.scoreNumber = 0;
+        this.gameLevel = 1;
         for(var i = 0;i < this.dataCount;i++)
         {
             var dis = Math.floor( Math.random() * 10000000) % this.maxDis
@@ -506,6 +530,8 @@ cc.Class({
             return;
         }
         this.wall_node.runAction(cc.moveBy(0.1,cc.p(0,-this.wallHeight)))
+        this.onAddScore();
+        this.onAddHp();
     },
 
     onBoomAni:function()
@@ -573,11 +599,38 @@ cc.Class({
         }
     },
 
+    onAddScore:function()
+    {
+        this.scoreNumber ++;
+        this.lblScore.string = this.scoreNumber.toString();
+    },
+
+    onAddHp : function()
+    {
+        // this.realHp
+        if(this.gameLevel < 10)
+        {
+            this.realHp += 1.8 - this.gameLevel / 15.0;
+        }
+        else
+        {
+            this.realHp += 0.8;
+        }
+    },
+
     changeHp:function(dt)
     {
         if (this.gameState != GameState.Gaming)
             return;
-        this.realHp -= this.hpReduceSpeed * dt;
+        if (this.gameLevel > 1)
+        {
+            this.realHp -= this.hpReduceSpeed * dt * (1 + this.gameLevel/5);
+        }
+        else
+        {
+            this.realHp -= this.hpReduceSpeed * dt;
+        }
+        
         if (this.realHp > this.totalHp)
             this.realHp = this.totalHp;
         if(this.realHp <= this.dieHpLimit)
@@ -586,13 +639,14 @@ cc.Class({
             //     cc.delayTime(2.0),
             //     cc.callFunc(this.onGameOver,this)
             // ))
-            cc.callFunc(this.onGameOver,this)
+            this.onPlayerDie();
+            this.onGameOver();
             // this.gameState = GameState.Free
             this.playPlayerDieEffect();
         }
         
         this.setHpBarProgress(this.realHp / this.totalHp);
-        console.log("this.realHp = ",this.realHp);
+        // console.log("this.realHp = ",this.realHp);
     },
 
     onCheckAlive :function()
@@ -605,10 +659,11 @@ cc.Class({
         if (wireSide == this.playSide)
         {
             this.onPlayerDie();
-            this.node.runAction(cc.sequence(
-                cc.delayTime(2.0),
-                cc.callFunc(this.onGameOver,this)
-            ))
+            this.onGameOver();
+            // this.node.runAction(cc.sequence(
+            //     cc.delayTime(2.0),
+            //     cc.callFunc(this.onGameOver,this)
+            // ))
         }
     },
 
@@ -623,31 +678,38 @@ cc.Class({
     onGameOver : function()
     {
         
-        this.gameState = GameState.Free
+        this.gameState = GameState.Free;
+
+        this.btn_restart.node.scheduleOnce(function(){
+            this.btn_restart.node.active = true;
+        },2)
+        
+        // this.wall_node.stopAllActions();
+
+       
+    },
+
+    onGameRestart :function()
+    {
+        this.btn_restart.node.active = false;
         this.btn_play.node.active = true;
         this.Handcuffs.setVisible(true);
         this.Logo.setVisible(true);
         this.setHpBarVisible(false);
-        this.onGameRestart();
+        this.setScoreVisible(false);
+        // this.onGameRestart();
 
         this.left_tap.setVisible(false);
         this.right_tap.setVisible(false);
         this.left_tap.node.stopAllActions();
         this.right_tap.node.stopAllActions();
-    },
 
-    onGameRestart :function()
-    {
         this.initData();
         for(var i = 0;i < this.wallCount;i++)
         {
             this.wallArray[i].destroy()
         }
-        this.wallArrayCount = 0;
-        this.wallIndex = -1;
-        this.wireIndex = 0;
-        this.curWireIndex = 0;
-        this.currentPosY = -320;
+        
         this.wall_node.setPosition(0,0);
         this.initWallUI();
         this.onPlayerChangeSide(PlaySide.Right);
@@ -663,12 +725,13 @@ cc.Class({
         this.realHp = INIT_HP;
         this.gameState = GameState.Gaming;
         // this.btn_play.setTouchEnable
-        this.btn_play.node.active = false
+        this.btn_play.node.active = false;
         this.runTapAction();
         this.Handcuffs.setVisible(false);
         this.Logo.setVisible(false);
         this.setHpBarVisible(true);
         this.setHpBarProgress(this.realHp / this.totalHp);
+        this.setScoreVisible(true);
     },
 
     playBackGroundMusic: function()
@@ -703,15 +766,24 @@ cc.Class({
         var progressBar = this.hpBar.getComponent(cc.ProgressBar);
         progressBar.progress = percent;
     },
+
+    setScoreVisible:function(visible)
+    {
+        this.sprScore.setVisible(visible);
+        this.lblScore.enabled  = visible;
+    },
+
     onLoad :function() 
     {
         this.visibleSize = cc.director.getVisibleSize();
         this.playSide = PlaySide.Right;
         this.gameState = GameState.Free;
+        this.btn_restart.node.active = false;
         this.left_tap.setVisible(false);
         this.right_tap.setVisible(false);
         
         this.setHpBarVisible(false);
+        this.setScoreVisible(false);
         // this.setHpBarProgress(0.5);
 
         this.initData();
@@ -725,7 +797,7 @@ cc.Class({
         // this.runTapAction()
         var self = this;
         this.btn_play.node.on(cc.Node.EventType.TOUCH_START, function(event){
-            console.log("按钮按下")
+            // console.log("按钮按下");
             self.playButtonClickEffect();
         })
 
@@ -734,11 +806,18 @@ cc.Class({
         // })
         
         this.btn_play.node.on(cc.Node.EventType.TOUCH_END, function(event){
-            console.log("在按钮结束")
-            self.onGameStart()
+            // console.log("在按钮结束");
+            self.onGameStart();
         })
-        // this.btn_play.addTouchEventListener(this.onBtnPlayCallBack,this)
-        
+
+        this.btn_restart.node.on(cc.Node.EventType.TOUCH_END,function(event){
+            self.onGameRestart();
+        })
+
+        // var pngPath = "Texture/Plist/score.png"
+        // // this.btn_play.addTouchEventListener(this.onBtnPlayCallBack,this)
+        // var helloLabel = new cc.LabelAtlas("0",pngPath,46,56,'0');
+        // this.node.addChild(helloLabel);
         
     },
 
