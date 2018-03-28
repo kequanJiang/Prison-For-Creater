@@ -679,9 +679,9 @@ cc.Class({
     {
         
         this.gameState = GameState.Free;
-
-        this.btn_restart.node.scheduleOnce(function(){
-            this.btn_restart.node.active = true;
+        var self = this;
+        this.btn_restart.scheduleOnce(function(){
+            self.btn_restart.node.active = true;
         },2)
         
         // this.wall_node.stopAllActions();
