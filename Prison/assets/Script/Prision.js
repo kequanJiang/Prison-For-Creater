@@ -305,20 +305,20 @@ cc.Class({
             this.left_tap.node.stopAllActions();
             this.right_tap.node.stopAllActions();
             var touchPos = event.touch.getLocation()
-            console.log("touchposx = ",touchPos.x)
-            console.log("visibleSizeX = ",this.visibleSize.width)
-            console.log("visibleSizeY = ",this.visibleSize.height)
+            // console.log("touchposx = ",touchPos.x)
+            // console.log("visibleSizeX = ",this.visibleSize.width)
+            // console.log("visibleSizeY = ",this.visibleSize.height)
             
             // console.log("dir = ",this.player.getComponent('Player').playSide)
             if (touchPos.x < this.visibleSize.width * 0.5 )
             {
-                console.log("on touch left")
+                // console.log("on touch left")
                 this.onPlayerClickDir(PlaySide.Left)
                 
             }
             else
             {
-                console.log("on touch right")
+                // console.log("on touch right")
                 this.onPlayerClickDir(PlaySide.Right)
             }
             
@@ -386,7 +386,7 @@ cc.Class({
 
     onPlayerClickDir :function(dir) 
     {
-        console.log("onPlayerClickDir dir = ",dir)
+        // console.log("onPlayerClickDir dir = ",dir)
         var changeSide = cc.callFunc(function () {
             this.onPlayerChangeSide(dir);
         },this);
@@ -489,7 +489,7 @@ cc.Class({
 
     onPlayerChangeSide : function(dir)
     {
-        console.log("onPlayerChangeSide dir = ",dir)
+        // console.log("onPlayerChangeSide dir = ",dir)
         if (this.playSide != dir)//换边
         {
             this.playSide = dir
@@ -532,6 +532,7 @@ cc.Class({
         this.wall_node.runAction(cc.moveBy(0.1,cc.p(0,-this.wallHeight)))
         this.onAddScore();
         this.onAddHp();
+        this.onCheckLevel();
     },
 
     onBoomAni:function()
@@ -618,6 +619,16 @@ cc.Class({
         }
     },
 
+    onCheckLevel:function()
+    {
+        if (this.gameLevel * 20 == this.scoreNumber)
+        {
+            this.gameLevel ++;
+            console.log("level = ",this.gameLevel);
+
+        }
+    },
+
     changeHp:function(dt)
     {
         if (this.gameState != GameState.Gaming)
@@ -677,12 +688,21 @@ cc.Class({
 
     onGameOver : function()
     {
-        
+        console.log("onGameOver!");
         this.gameState = GameState.Free;
         var self = this;
-        this.btn_restart.scheduleOnce(function(){
-            self.btn_restart.node.active = true;
-        },2)
+        // this.btn_restart.node.scheduleOnce(function(){
+        //     self.btn_restart.node.active = true;
+        //     console.log("btn_restart setvisible true");
+        // },2)
+        self.btn_restart.node.active = true;
+        // this.btn_restart.node.runAction(cc.sequence(
+        //     cc.delayTime(2),
+        //     cc.callFunc(function(){
+        //         self.btn_restart.node.active = true;
+        //         console.log("btn_restart setvisible true");
+        //     },this),
+        // ))
         
         // this.wall_node.stopAllActions();
 

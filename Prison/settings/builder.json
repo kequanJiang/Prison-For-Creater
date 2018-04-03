@@ -3,7 +3,6 @@
   "appSecret": "",
   "encryptJs": true,
   "excludeScenes": [],
-  "fb-instant-games": {},
   "includeAnySDK": false,
   "includeSDKBox": false,
   "inlineSpriteFrames": true,
@@ -21,17 +20,13 @@
   },
   "packageName": "org.cocos2d.helloworld",
   "privateKey": "",
-  "qqplay": {
-    "orientation": "portrait"
-  },
   "renderMode": "0",
   "startScene": "0f056b47-7f1f-4276-9621-d6535e4828e9",
-  "title": "hello_world",
+  "title": "Prison",
   "webOrientation": "auto",
   "wechatgame": {
     "appid": "wx6ac3f5090a6b99c5",
     "orientation": "portrait"
   },
-  "xxteaKey": "ce2042e5-e8df-48",
-  "zipCompressJs": true
+  "xxteaKey": "ce2042e5-e8df-48"
 }
